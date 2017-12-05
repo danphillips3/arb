@@ -60,12 +60,67 @@
     	<artifactId>xchange-kraken</artifactId>
     	<version>4.3.1-SNAPSHOT</version>
     </dependency>
+    <dependency>
+    	<groupId>mysql</groupId>
+    	<artifactId>mysql-connector-java</artifactId>
+    	<version>5.1.45</version>
+	</dependency>
+    <dependency>
+    	<groupId>org.knowm.xchange</groupId>
+    	<artifactId>xchange-bitfinex</artifactId>
+    	<version>4.3.1-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.knowm.xchange</groupId>
+    	<artifactId>xchange-okcoin</artifactId>
+    	<version>4.3.1-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.knowm.xchange</groupId>
+    	<artifactId>xchange-gemini</artifactId>
+    	<version>4.3.1-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.knowm.xchange</groupId>
+    	<artifactId>xchange-btce</artifactId>
+    	<version>4.3.1-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.knowm.xchange</groupId>
+    	<artifactId>xchange-itbit</artifactId>
+    	<version>4.3.1-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.knowm.xchange</groupId>
+    	<artifactId>xchange-quadrigacx</artifactId>
+    	<version>4.3.1-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.knowm.xchange</groupId>
+    	<artifactId>xchange-bittrex</artifactId>
+    	<version>4.3.1-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.knowm.xchange</groupId>
+    	<artifactId>xchange-dsx</artifactId>
+    	<version>4.3.1-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.knowm.xchange</groupId>
+    	<artifactId>xchange-taurus</artifactId>
+    	<version>4.3.1-SNAPSHOT</version>
+    </dependency>
   </dependencies>
   <repositories>
     <repository>
         <id>sonatype-oss-snapshot</id>
         <name>sonatype-oss-snapshot</name>
         <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </repository>
+    <repository>
+        <id>mysql-jdbc</id>
+        <name>mysql-jdbc</name>
+        <url>https://mvnrepository.com/artifact/mysql/mysql-connector-java</url>
     </repository>
 </repositories>
 </project>

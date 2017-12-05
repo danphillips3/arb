@@ -16,8 +16,6 @@ import org.knowm.xchange.currency.CurrencyPair;
 
 public class Arb {
 	private boolean m_isRecording = false;
-	private String m_recordingPath = "";
-	private PrintWriter m_recordWriter;
 	private ArrayList<Exchange> m_exchanges = new ArrayList<Exchange>();
 	private ArrayList<MarketDataFeed> m_marketDataFeeds = new ArrayList<MarketDataFeed>();
 	private ArrayList<CurrencyPair> m_currencyPairs = new ArrayList<CurrencyPair>();
@@ -26,23 +24,14 @@ public class Arb {
 	
 	private static Map<String, AccountInfo> m_accountMap = new HashMap<String, AccountInfo>();
 	
-	public Arb(CurrencyPair[] currencyPairs, Map<String, String> exchangeNameTypeMap, Strategy strategy) {
+	public Arb(ArrayList<CurrencyPair> currencyPairs, Map<String, String> exchangeNameTypeMap, Strategy strategy) {
 		m_calc = new Calc(this, strategy);
 		addCurrencyPairs(currencyPairs);
 		addExchanges(exchangeNameTypeMap);
 	}
 	
-	public void initRecording(String recordingPath) {
+	public void initRecording() {
 		m_isRecording = true;
-		m_recordingPath = recordingPath;
-		
-		try {
-			FileWriter fw = new FileWriter(m_recordingPath, false);
-			BufferedWriter bw = new BufferedWriter(fw);
-			m_recordWriter = new PrintWriter(bw);
-		} catch (Exception e) {
-			System.out.println("Error initializing recording: " + e.getMessage());
-		}
 	}
 	
 	public void startLive() {
@@ -59,6 +48,7 @@ public class Arb {
 		System.out.println("Starting Arb - Replaying from " + replayPath);
 		
 		ArrayList<OrderBookInfo> updates = new ArrayList<OrderBookInfo>();
+		
 		try {
 			FileReader fileReader = new FileReader(replayPath);
 			BufferedReader reader = new BufferedReader(fileReader);
@@ -75,6 +65,8 @@ public class Arb {
 		for (OrderBookInfo orderBookInfo : updates) {
 			m_calc.onOrderBookUpdate(orderBookInfo);
 		}
+		
+		printTrades();
 	}
 	
 	public void executeTrade(TradeDetails trade) {
@@ -118,7 +110,11 @@ public class Arb {
 			BigDecimal usdValue = value.multiply(usdRate);
 			totalUsdValue = totalUsdValue.add(usdValue);
 		}
-		System.out.print(" -> Total USD Value: " + totalUsdValue.setScale(2, BigDecimal.ROUND_DOWN));
+		System.out.println(" -> Total USD Value: " + totalUsdValue.setScale(2, BigDecimal.ROUND_DOWN));
+	}
+	
+	public void printTrades() {
+		System.out.println("");
 		System.out.println("--Trades--");
 		for (String tradeStr : tradeList) {
 			System.out.println(tradeStr);
@@ -149,7 +145,7 @@ public class Arb {
 		m_currencyPairs.add(currencyPair);
 	}
 	
-	public void addCurrencyPairs(CurrencyPair[] pairs) {
+	public void addCurrencyPairs(ArrayList<CurrencyPair> pairs) {
 		for (CurrencyPair pair : pairs) {
 			addCurrencyPair(pair);
 		}
@@ -160,7 +156,6 @@ public class Arb {
 	}
 	
 	public void recordOrderBookInfo(OrderBookInfo orderBookInfo) {
-		m_recordWriter.println(orderBookInfo.serialize());
-		m_recordWriter.flush();
+		DBManager.insert(orderBookInfo);
 	}
 }

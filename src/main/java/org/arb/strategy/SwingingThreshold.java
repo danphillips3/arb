@@ -12,13 +12,17 @@ import org.arb.TradeDetails;
 import org.knowm.xchange.currency.CurrencyPair;
 
 /*
- * SimpleStrategy
- * Buy low, sell high
- * Static profit threshold
+ * SwingingThreshold
+ * 
  */
 
-public class SimpleStrategy implements Strategy {
-	private BigDecimal m_profitThreshold = new BigDecimal(10);
+public class SwingingThreshold implements Strategy {
+	private BigDecimal m_profitThresholdHigh = new BigDecimal(10);
+	private BigDecimal m_profitThresholdLow = new BigDecimal(0);
+	private BigDecimal m_profitThreshold = m_profitThresholdHigh;
+	
+	private int m_stagnationLimit = 10000;
+	private int m_currentStagnation = 0;
 	
 	public ArrayList<TradeDetails> getTrades(CalcPartition partition, OrderBookInfo lastUpdatedOrderBook) {
 		ArrayList<TradeDetails> potentialTrades = new ArrayList<TradeDetails>();
@@ -48,8 +52,16 @@ public class SimpleStrategy implements Strategy {
 		
 		ArrayList<TradeDetails> trades = new ArrayList<TradeDetails>();
 		if (bestTrade == null) {
+			m_currentStagnation++;
+			if (m_currentStagnation > m_stagnationLimit) {
+				m_profitThreshold = m_profitThresholdLow;
+			}
+			
 			System.out.println("No viable trades");
 		} else {
+			m_currentStagnation = 0;
+			m_profitThreshold = m_profitThresholdHigh;
+			
 			trades.add(bestTrade);
 		}
 		return trades;

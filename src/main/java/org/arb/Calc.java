@@ -27,12 +27,14 @@ public class Calc {
 		CalcPartition calcPartition = getPartition(orderBookInfo.getCurrencyPair());
 		calcPartition.onOrderBookUpdate(orderBookInfo);
 		
-		ArrayList<TradeDetails> trades = m_strategy.getTrades(calcPartition);
-		for (TradeDetails trade : trades) {
-			m_arb.executeTrade(trade);
+		if (m_strategy != null) {
+			ArrayList<TradeDetails> trades = m_strategy.getTrades(calcPartition, orderBookInfo);
+			for (TradeDetails trade : trades) {
+				m_arb.executeTrade(trade);
+			}
+			
+			m_arb.printFullWalletValue();
 		}
-		
-		m_arb.printFullWalletValue();
 	}
 	
 	private CalcPartition getPartition(CurrencyPair currencyPair) {

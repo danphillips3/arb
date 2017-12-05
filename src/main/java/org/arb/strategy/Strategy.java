@@ -1,9 +1,11 @@
 package org.arb.strategy;
 
 import java.util.ArrayList;
+
 import org.arb.CalcPartition;
+import org.arb.OrderBookInfo;
 import org.arb.TradeDetails;
 
 public interface Strategy {
-	public ArrayList<TradeDetails> getTrades(CalcPartition partition);
+	public ArrayList<TradeDetails> getTrades(CalcPartition partition, OrderBookInfo lastUpdated);
 }

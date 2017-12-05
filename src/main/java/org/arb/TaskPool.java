@@ -6,7 +6,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class TaskPool {
-	private static ExecutorService m_executor = Executors.newFixedThreadPool(5);
+	private static ExecutorService m_executor = Executors.newFixedThreadPool(20);
 	
 	public static Future<?> addTask(Runnable task) {
 		try {

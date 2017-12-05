@@ -2,7 +2,6 @@ package org.arb;
 
 import java.util.*;
 
-import org.knowm.xchange.*;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.service.marketdata.MarketDataService;
@@ -10,7 +9,7 @@ import org.knowm.xchange.service.marketdata.MarketDataService;
 import si.mazi.rescu.HttpStatusExceptionSupport;
 
 public class MarketDataFeed {
-	private final int updateDelayMillis = 3000;
+	private final int updateDelayMillis = 2000;
 	
 	private String m_feedName;
 	private MarketDataService m_marketDataService;
