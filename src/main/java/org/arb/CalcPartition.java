@@ -17,7 +17,6 @@ public class CalcPartition {
 	}
 	
 	public boolean onOrderBookUpdate(OrderBookInfo orderBookInfo) {
-		System.out.println(orderBookInfo.toString());
 		if (orderBookInfo.getBestAsk().equals(BigDecimal.ZERO) || orderBookInfo.getBestBid().equals(BigDecimal.ZERO)) {
 			System.out.println("Skipping bad update");
 			return false;

@@ -2,7 +2,6 @@ package org.arb;
 
 import java.math.*;
 
-import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 
 public class TradeDetails {
@@ -49,6 +48,18 @@ public class TradeDetails {
 	
 	public String getExchange() {
 		return m_exchange;
+	}
+	
+	public BigDecimal getQty() {
+		return m_qty;
+	}
+	
+	public BigDecimal getPrice() {
+		return m_price;
+	}
+	
+	public TradeType getTradeType() {
+		return m_tradeType;
 	}
 	
 	public String toString() {

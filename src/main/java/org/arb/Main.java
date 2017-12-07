@@ -18,6 +18,7 @@ import org.knowm.xchange.gdax.GDAXExchange;
 import org.knowm.xchange.gemini.v1.GeminiExchange;
 import org.knowm.xchange.itbit.v1.ItBitExchange;
 import org.knowm.xchange.bitbay.BitbayExchange;
+import org.knowm.xchange.bitfinex.v1.BitfinexExchange;
 import org.knowm.xchange.btcc.BTCCExchange;
 import org.knowm.xchange.btce.v3.BTCEExchange;
 import org.knowm.xchange.kraken.KrakenExchange;
@@ -48,6 +49,7 @@ public class Main {
 		exchangeLookupMap = new HashMap<String, String>();
 		exchangeLookupMap.put("anx", ANXExchange.class.getName());
 		exchangeLookupMap.put("bitbay", BitbayExchange.class.getName());
+		exchangeLookupMap.put("bitfinex", BitfinexExchange.class.getName());
 		exchangeLookupMap.put("bitstamp", BitstampExchange.class.getName());
 		exchangeLookupMap.put("btce", BTCEExchange.class.getName());
 		exchangeLookupMap.put("dsx", DSXExchange.class.getName());

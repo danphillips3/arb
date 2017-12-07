@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.Map.Entry;
 
+import org.arb.TradeDetails.TradeType;
 import org.arb.strategy.Strategy;
 import org.knowm.xchange.*;
 import org.knowm.xchange.currency.Currency;
@@ -106,7 +107,15 @@ public class Arb {
 	
 	public void executeTrade(TradeDetails trade) {
 		AccountInfo account = getAccountInfo(trade.getExchange());
-		trade.applyToAccount(account);
+		if (m_runMode == RunMode.Replay) {
+			trade.applyToAccount(account);
+			
+			if (m_calc.getStrategy() != null) {
+				m_calc.getStrategy().onFill(trade.getExchange(), trade.getTradeType(), trade.getQty(), trade.getPrice());
+			}
+		} else {
+			Main.exitWithError("ExecuteTrade not implemented for this run mode");
+		}
 	}
 	
 	public static AccountInfo getAccountInfo(String name) {

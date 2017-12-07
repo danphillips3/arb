@@ -8,10 +8,13 @@ import org.arb.AccountInfo;
 import org.arb.CalcPartition;
 import org.arb.OrderBookInfo;
 import org.arb.TradeDetails;
+import org.arb.TradeDetails.TradeType;
 import org.knowm.xchange.currency.Currency;
 
 public abstract class Strategy {
 	public abstract ArrayList<TradeDetails> getTrades(CalcPartition partition, OrderBookInfo lastUpdated);
+	
+	public void onFill(String exchange, TradeType type, BigDecimal qty, BigDecimal price) { }
 	
 	public void setStartingReplayBalance(Collection<AccountInfo> accounts) {
 		for (AccountInfo account : accounts) {
