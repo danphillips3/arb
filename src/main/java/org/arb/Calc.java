@@ -20,20 +20,28 @@ public class Calc {
 	}
 	
 	public void onOrderBookUpdate(OrderBookInfo orderBookInfo) {
-		if (m_arb.isRecording()) {
+		if (m_arb.getRunMode() == RunMode.Record) {
 			m_arb.recordOrderBookInfo(orderBookInfo);
-		}
-		
-		CalcPartition calcPartition = getPartition(orderBookInfo.getCurrencyPair());
-		calcPartition.onOrderBookUpdate(orderBookInfo);
-		
-		if (m_strategy != null) {
-			ArrayList<TradeDetails> trades = m_strategy.getTrades(calcPartition, orderBookInfo);
-			for (TradeDetails trade : trades) {
-				m_arb.executeTrade(trade);
-			}
+		} else {
+			CalcPartition calcPartition = getPartition(orderBookInfo.getCurrencyPair());
+			boolean updateSuccess = calcPartition.onOrderBookUpdate(orderBookInfo);
 			
-			m_arb.printFullWalletValue();
+			if (m_strategy != null && updateSuccess) {
+				ArrayList<TradeDetails> trades = m_strategy.getTrades(calcPartition, orderBookInfo);
+				for (TradeDetails trade : trades) {
+					m_arb.executeTrade(trade);
+					
+					String tradeLogLine = trade.toString();
+					if (trade == trades.get(trades.size()-1)) {
+						tradeLogLine += " -> " + m_arb.walletToString();
+					}
+					Arb.addTradeLogLine(tradeLogLine);
+				}
+				
+				if (!trades.isEmpty()) {
+					m_arb.pauseIfEnabled();
+				}
+			}
 		}
 	}
 	
@@ -44,5 +52,9 @@ public class Calc {
 			m_partitionMap.put(currencyPair, calcPartition);
 		}
 		return calcPartition;
+	}
+	
+	public Strategy getStrategy() {
+		return m_strategy;
 	}
 }

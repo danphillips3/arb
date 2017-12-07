@@ -6,63 +6,59 @@ import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 
 public class TradeDetails {
+	public enum TradeType { Buy, Sell, ShortSell, BuyBack }
+	
 	private CurrencyPair m_currencyPair;
-	private String m_buyExchange;
-	private String m_sellExchange;
-	private BigDecimal m_bidPrice;
-	private BigDecimal m_askPrice;
+	private String m_exchange;
+	private TradeType m_tradeType;
+	private BigDecimal m_price;
 	private BigDecimal m_qty;
-	private BigDecimal m_buyFee;
-	private BigDecimal m_sellFee;
-	private BigDecimal m_estimatedProfit;
+	private BigDecimal m_fee;
 	
-	public TradeDetails(CurrencyPair currencyPair, String buyExchange, String sellExchange, 
-			BigDecimal bidPrice, BigDecimal askPrice, BigDecimal qty, 
-			BigDecimal buyFee, BigDecimal sellFee, BigDecimal estimatedProfit) {
+	public TradeDetails(CurrencyPair currencyPair, String exchange, TradeType tradeType, 
+			BigDecimal price, BigDecimal qty, BigDecimal fee) {
 		m_currencyPair = currencyPair;
-		m_buyExchange = buyExchange;
-		m_sellExchange = sellExchange;
-		m_bidPrice = bidPrice;
-		m_askPrice = askPrice;
+		m_exchange = exchange;
+		m_tradeType = tradeType;
+		m_price = price;
 		m_qty = qty;
-		m_buyFee = buyFee;
-		m_sellFee = sellFee;
-		m_estimatedProfit = estimatedProfit;
+		m_fee = fee;
 	}
 	
-	public String getBuyExchange() {
-		return m_buyExchange;
+	public void applyToAccount(AccountInfo account) {
+		MoneyAmount baseCurrencyTradeVal = new MoneyAmount(m_currencyPair.base, m_qty);
+		MoneyAmount counterCurrencyTradeVal = new MoneyAmount(m_currencyPair.counter, m_price.multiply(m_qty));
+		MoneyAmount fee = new MoneyAmount(m_currencyPair.counter, m_price.multiply(m_qty).multiply(m_fee));
+		
+		if (m_tradeType == TradeType.Buy) {
+			account.applyCredit(baseCurrencyTradeVal);
+			account.applyDebit(counterCurrencyTradeVal);
+		} else if (m_tradeType == TradeType.Sell) {
+			account.applyCredit(counterCurrencyTradeVal);
+			account.applyDebit(baseCurrencyTradeVal);
+		} else if (m_tradeType == TradeType.ShortSell) {
+			account.applyCredit(counterCurrencyTradeVal);
+			account.applyDebit(baseCurrencyTradeVal);
+		} else if (m_tradeType == TradeType.BuyBack) {
+			account.applyCredit(baseCurrencyTradeVal);
+			account.applyDebit(counterCurrencyTradeVal);
+		}
+		
+		account.applyDebit(fee);
 	}
 	
-	public String getSellExchange() {
-		return m_sellExchange;
-	}
-	
-	public MoneyAmount getBuyCredit() {
-		return new MoneyAmount(m_currencyPair.base, m_qty);
-	}
-	
-	public MoneyAmount getSellCredit() {
-		return new MoneyAmount(m_currencyPair.counter, m_qty.multiply(m_bidPrice).subtract(m_sellFee));
-	}
-	
-	public MoneyAmount getBuyDebit() {
-		return new MoneyAmount(m_currencyPair.counter, m_qty.multiply(m_askPrice).add(m_buyFee));
-	}
-	
-	public MoneyAmount getSellDebit() {
-		return new MoneyAmount(m_currencyPair.base, m_qty);
-	}
-	
-	public BigDecimal getEstimatedProfit() {
-		return m_estimatedProfit;
+	public String getExchange() {
+		return m_exchange;
 	}
 	
 	public String toString() {
-		return m_currencyPair.toString() + 
-				" BUY " + m_buyExchange + " @ " + m_askPrice + " / " +
-				" SELL " + m_sellExchange + " @ " + m_bidPrice + " " +
-				", Qty = " + m_qty.setScale(5, BigDecimal.ROUND_DOWN) + 
-				", Profit = " + m_estimatedProfit.setScale(5, BigDecimal.ROUND_DOWN);
+		String direction = m_tradeType == TradeType.Buy || m_tradeType == TradeType.BuyBack ? "-" : "+";
+		BigDecimal dollarVal = m_price.multiply(m_qty);
+		BigDecimal fee = dollarVal.multiply(m_fee);
+		
+		return m_tradeType.toString() + " " + m_currencyPair.toString() + 
+			" from " + m_exchange + ": " + m_qty + " @ " + Util.format(m_price) + 
+			" (" + direction + " $" + Util.format(dollarVal) + ") " + 
+			" (- $" + Util.format(fee) + ")";
 	}
 }

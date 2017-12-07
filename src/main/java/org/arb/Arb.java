@@ -3,8 +3,6 @@ package org.arb;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.Map.Entry;
@@ -13,80 +11,111 @@ import org.arb.strategy.Strategy;
 import org.knowm.xchange.*;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.service.account.AccountService;
+import org.knowm.xchange.service.marketdata.MarketDataService;
+
+enum RunMode { Unknown, Live, Record, Replay };
 
 public class Arb {
-	private boolean m_isRecording = false;
+	private RunMode m_runMode;
+	private Calc m_calc;
 	private ArrayList<Exchange> m_exchanges = new ArrayList<Exchange>();
 	private ArrayList<MarketDataFeed> m_marketDataFeeds = new ArrayList<MarketDataFeed>();
 	private ArrayList<CurrencyPair> m_currencyPairs = new ArrayList<CurrencyPair>();
-	private ArrayList<String> tradeList = new ArrayList<String>();
-	private Calc m_calc;
-	
+	private static ArrayList<String> m_tradeLog = new ArrayList<String>();
 	private static Map<String, AccountInfo> m_accountMap = new HashMap<String, AccountInfo>();
 	
-	public Arb(ArrayList<CurrencyPair> currencyPairs, Map<String, String> exchangeNameTypeMap, Strategy strategy) {
+	private boolean m_pauseEnabled;
+	private Date m_start;
+	private Date m_end;
+	
+	public Arb(
+			RunMode runMode, 
+			ArrayList<CurrencyPair> currencyPairs, 
+			Map<String, String> exchangeNameTypeMap, 
+			Strategy strategy, 
+			Date start, 
+			Date end,
+			boolean pauseEnabled) {
+		
+		m_runMode = runMode;
 		m_calc = new Calc(this, strategy);
+		m_start = start;
+		m_end = end;
+		m_pauseEnabled = pauseEnabled;
+		
 		addCurrencyPairs(currencyPairs);
 		addExchanges(exchangeNameTypeMap);
 	}
 	
-	public void initRecording() {
-		m_isRecording = true;
+	public void start() {
+		if (m_runMode == RunMode.Live) {
+			startLive();
+		} else if (m_runMode == RunMode.Record) {
+			startRecord();
+		} else if (m_runMode == RunMode.Replay) {
+			startReplay();
+		} else {
+			Main.exitWithError("Unknown run mode");
+		}
 	}
 	
-	public void startLive() {
+	private void startLive() {
 		System.out.println("Starting Arb - Live");
+		
 		for (MarketDataFeed feed : m_marketDataFeeds) {
 			feed.start();
 		}
 		
 		System.out.println("--Initial Wallet Value--");
-		printFullWalletValue();
+		System.out.println(walletToString());
 	}
 	
-	public void startReplay(String replayPath) {
-		System.out.println("Starting Arb - Replaying from " + replayPath);
+	private void startRecord() {
+		System.out.println("Starting Arb - Recording");
 		
-		ArrayList<OrderBookInfo> updates = new ArrayList<OrderBookInfo>();
-		
-		try {
-			FileReader fileReader = new FileReader(replayPath);
-			BufferedReader reader = new BufferedReader(fileReader);
-			String line;
-			while ((line = reader.readLine()) != null) {
-				OrderBookInfo orderBookInfo = new OrderBookInfo(line);
-				updates.add(orderBookInfo);
-			}
-			reader.close();
-		} catch (Exception e) {
-			System.out.println("Error reading replay from " + replayPath + ": " + e.getMessage());
+		for (MarketDataFeed feed : m_marketDataFeeds) {
+			feed.start();
 		}
+	}
+	
+	private void startReplay() {
+		System.out.println("Starting Arb - Replaying from " + m_start.toString() + " - " + m_end.toString());
+		
+		ArrayList<OrderBookInfo> updates = DBManager.loadOrderBookUpdates(getExchanges(), m_start, m_end);
+		System.out.println("Loaded " + updates.size() + " updates");
+		
+		Strategy strat = m_calc.getStrategy();
+		if (strat != null) {
+			m_calc.getStrategy().setStartingReplayBalance(m_accountMap.values());
+		}
+		
+		System.out.println("--Initial Wallet Value--");
+		System.out.println(walletToString());
+		pauseIfEnabled();
 		
 		for (OrderBookInfo orderBookInfo : updates) {
 			m_calc.onOrderBookUpdate(orderBookInfo);
 		}
 		
 		printTrades();
+		
+		System.out.println("--Final Wallet Value--");
+		System.out.println(walletToString());
 	}
 	
 	public void executeTrade(TradeDetails trade) {
-		System.out.println("Executing trade: " + trade.toString());
-		tradeList.add(trade.toString());
-		
-		AccountInfo buyAccount = getAccountInfo(trade.getBuyExchange());
-		AccountInfo sellAccount = getAccountInfo(trade.getSellExchange());
-		
-		buyAccount.applyCredit(trade.getBuyCredit());
-		buyAccount.applyDebit(trade.getBuyDebit());
-		sellAccount.applyCredit(trade.getSellCredit());
-		sellAccount.applyDebit(trade.getSellDebit());
+		AccountInfo account = getAccountInfo(trade.getExchange());
+		trade.applyToAccount(account);
 	}
 	
 	public static AccountInfo getAccountInfo(String name) {
 		return m_accountMap.get(name);
 	}
-	
-	public void printFullWalletValue() {
+
+	public String walletToString() {
+		String walletString = "";
+		
 		Map<Currency, BigDecimal> wallet = new HashMap<Currency, BigDecimal>();
 		for (AccountInfo account : m_accountMap.values()) {
 			for (Currency currency : account.getCurrencies()) {
@@ -99,38 +128,40 @@ public class Arb {
 			}
 		}
 		
-		System.out.print("Wallet: ");
-		
-		BigDecimal totalUsdValue = BigDecimal.ZERO;
 		for (Currency currency : wallet.keySet()) {
 			BigDecimal value = wallet.get(currency);
-			System.out.print(currency.toString() + " = " + value.setScale(4, BigDecimal.ROUND_HALF_EVEN) + " ");
-			
-			BigDecimal usdRate = ArbControls.getUsdRate(currency);
-			BigDecimal usdValue = value.multiply(usdRate);
-			totalUsdValue = totalUsdValue.add(usdValue);
+			walletString += currency.toString() + " = " + value.setScale(4, BigDecimal.ROUND_HALF_EVEN) + " ";
 		}
-		System.out.println(" -> Total USD Value: " + totalUsdValue.setScale(2, BigDecimal.ROUND_DOWN));
+		
+		return walletString;
 	}
 	
 	public void printTrades() {
 		System.out.println("");
-		System.out.println("--Trades--");
-		for (String tradeStr : tradeList) {
-			System.out.println(tradeStr);
+		System.out.println("--Trade Log--");
+		for (String tradeLogLine : m_tradeLog) {
+			System.out.println(tradeLogLine);
 		}
 	}
 	
 	public void addExchange(String name, String exchangeType) {
 		System.out.println("Adding exchange - " + name);
 		
-		Exchange exchange = ExchangeFactory.INSTANCE.createExchange(exchangeType);
-		m_exchanges.add(exchange);
+		Exchange exchange = null;
+		AccountService accountService = null;
+		MarketDataService marketDataService = null;
+		if (m_runMode != RunMode.Replay) {
+			exchange = ExchangeFactory.INSTANCE.createExchange(exchangeType);
+			accountService = exchange.getAccountService();
+			marketDataService = exchange.getMarketDataService();
+			
+			m_exchanges.add(exchange);
+		}
 		
-		AccountInfo account = new AccountInfo(name, exchange.getAccountService());
+		AccountInfo account = new AccountInfo(name, accountService);
 		m_accountMap.put(name, account);
 		
-		MarketDataFeed marketDataFeed = new MarketDataFeed(name, m_currencyPairs, exchange.getMarketDataService(), m_calc);
+		MarketDataFeed marketDataFeed = new MarketDataFeed(name, m_currencyPairs, marketDataService, m_calc);
 		m_marketDataFeeds.add(marketDataFeed);
 	}
 	
@@ -151,11 +182,26 @@ public class Arb {
 		}
 	}
 	
-	public boolean isRecording() {
-		return m_isRecording;
+	public RunMode getRunMode() {
+		return m_runMode;
 	}
 	
 	public void recordOrderBookInfo(OrderBookInfo orderBookInfo) {
 		DBManager.insert(orderBookInfo);
+	}
+	
+	public ArrayList<String> getExchanges() {
+		return new ArrayList<String>(m_accountMap.keySet());
+	}
+	
+	public void pauseIfEnabled() {
+		if (m_pauseEnabled) {
+			Util.pause();
+		}
+	}
+	
+	public static void addTradeLogLine(String trade) {
+		System.out.println(trade);
+		m_tradeLog.add(trade);
 	}
 }

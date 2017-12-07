@@ -1,6 +1,8 @@
 package org.arb;
 
 import java.math.BigDecimal;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 
 import org.knowm.xchange.currency.Currency;
@@ -54,6 +56,18 @@ public class OrderBookInfo {
 				break;
 			}
 		}
+	}
+	
+	public OrderBookInfo(ResultSet row) throws SQLException {
+		m_exchange = row.getString("exchange");
+		m_bestBid = row.getBigDecimal("bid_px");
+		m_bestAsk = row.getBigDecimal("ask_px");
+		m_bestBidQty = row.getBigDecimal("bid_qty");
+		m_bestAskQty = row.getBigDecimal("ask_qty");
+		
+		Currency base = new Currency(row.getString("currency_base"));
+		Currency counter = new Currency(row.getString("currency_counter"));
+		m_currencyPair = new CurrencyPair(base, counter);
 	}
 	
 	public OrderBookInfo(String serialized) {

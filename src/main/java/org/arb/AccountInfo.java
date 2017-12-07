@@ -16,9 +16,6 @@ public class AccountInfo {
 	public AccountInfo(String name, AccountService accountService) {
 		m_name = name;
 		m_accountService = accountService;
-		
-		updateBalance(Currency.USD, new BigDecimal(1000));
-		updateBalance(Currency.BTC, new BigDecimal(0.1));
 	}
 	
 	public void updateBalance(Currency currency, BigDecimal val) {
@@ -31,6 +28,14 @@ public class AccountInfo {
 			return BigDecimal.ZERO;
 		}
 		return balance;
+	}
+	
+	public BigDecimal getTransactionRate() {
+		return new BigDecimal(0.0025);
+	}
+	
+	public boolean isMarginTradingAllowed() { 
+		return true;
 	}
 	
 	public Set<Currency> getCurrencies() {
@@ -47,9 +52,5 @@ public class AccountInfo {
 		BigDecimal origBalance = getBalance(amount.getCurrency());
 		BigDecimal newBalance = origBalance.subtract(amount.getAmount());
 		updateBalance(amount.getCurrency(), newBalance);
-		
-		if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
-			System.out.println("WARNING: " + m_name + " Balance < 0 (" + newBalance + ") " + amount.getCurrency().toString());
-		}
 	}
 }

@@ -7,7 +7,6 @@ import org.arb.AccountInfo;
 import org.arb.Arb;
 import org.arb.CalcPartition;
 import org.arb.OrderBookInfo;
-import org.arb.StaticData;
 import org.arb.TradeDetails;
 import org.knowm.xchange.currency.CurrencyPair;
 
@@ -16,7 +15,7 @@ import org.knowm.xchange.currency.CurrencyPair;
  * 
  */
 
-public class SwingingThreshold implements Strategy {
+public class SwingingThreshold extends Strategy {
 	private BigDecimal m_profitThresholdHigh = new BigDecimal(10);
 	private BigDecimal m_profitThresholdLow = new BigDecimal(0);
 	private BigDecimal m_profitThreshold = m_profitThresholdHigh;
@@ -25,6 +24,8 @@ public class SwingingThreshold implements Strategy {
 	private int m_currentStagnation = 0;
 	
 	public ArrayList<TradeDetails> getTrades(CalcPartition partition, OrderBookInfo lastUpdatedOrderBook) {
+		return new ArrayList<TradeDetails>();
+		/*
 		ArrayList<TradeDetails> potentialTrades = new ArrayList<TradeDetails>();
 		for (OrderBookInfo orderBookInfo : partition.getOrderBookMap().values()) {
 			if (lastUpdatedOrderBook.getExchange() != orderBookInfo.getExchange()) {
@@ -65,8 +66,9 @@ public class SwingingThreshold implements Strategy {
 			trades.add(bestTrade);
 		}
 		return trades;
+		*/
 	}
-	
+	/*
 	private TradeDetails getPotentialTrade(CurrencyPair currencyPair, OrderBookInfo orderBook, OrderBookInfo compareOrderBook) {
 		OrderBookInfo buySideOrderBook, sellSideOrderBook;
 		if (orderBook.getBestBid().compareTo(compareOrderBook.getBestBid()) <= 0) {
@@ -98,8 +100,8 @@ public class SwingingThreshold implements Strategy {
 		BigDecimal sellDollarAmount = sellSideOrderBook.getBestBid().multiply(qty);
 		BigDecimal diffDollarAmount = sellDollarAmount.subtract(buyDollarAmount);
 		
-		BigDecimal buyTransactionFee = buyDollarAmount.multiply(StaticData.getTransactionRate());
-		BigDecimal sellTransactionFee = sellDollarAmount.multiply(StaticData.getTransactionRate());
+		BigDecimal buyTransactionFee = buyDollarAmount.multiply(buySideAccount.getTransactionRate());
+		BigDecimal sellTransactionFee = sellDollarAmount.multiply(sellSideAccount.getTransactionRate());
 		BigDecimal totalTransactionFee = buyTransactionFee.add(sellTransactionFee);
 		
 		BigDecimal profit = diffDollarAmount.subtract(totalTransactionFee);
@@ -109,5 +111,5 @@ public class SwingingThreshold implements Strategy {
 				buySideOrderBook.getExchange(), sellSideOrderBook.getExchange(),
 				sellSideOrderBook.getBestBid(), buySideOrderBook.getBestAsk(),
 				qty, buyTransactionFee, sellTransactionFee, profit);
-	}
+	}*/
 }

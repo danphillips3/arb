@@ -5,7 +5,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import org.knowm.xchange.currency.*;
-import org.knowm.xchange.dto.marketdata.OrderBook;
 
 public class CalcPartition {
 	private CurrencyPair m_currencyPair;
@@ -17,9 +16,15 @@ public class CalcPartition {
 		m_currencyPair = currencyPair;
 	}
 	
-	public void onOrderBookUpdate(OrderBookInfo orderBookInfo) {
+	public boolean onOrderBookUpdate(OrderBookInfo orderBookInfo) {
 		System.out.println(orderBookInfo.toString());
+		if (orderBookInfo.getBestAsk().equals(BigDecimal.ZERO) || orderBookInfo.getBestBid().equals(BigDecimal.ZERO)) {
+			System.out.println("Skipping bad update");
+			return false;
+		}
+		
 		m_orderBookMap.put(orderBookInfo.getExchange(), orderBookInfo);
+		return true;
 	}
 	
 	public CurrencyPair getCurrencyPair() {

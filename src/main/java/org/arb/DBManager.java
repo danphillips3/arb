@@ -1,6 +1,11 @@
 package org.arb;
 
 import java.sql.*;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class DBManager {
 	private static Connection m_connection;
@@ -13,7 +18,7 @@ public class DBManager {
 			m_connection = DriverManager.getConnection("jdbc:mysql://ec2-18-216-220-109.us-east-2.compute.amazonaws.com:3306/arb","dphillips","test123");  
 			System.out.println("Successfully connected to DB");
 		} catch (Exception e) {
-			System.out.println(e);
+			Main.exitWithError("Could not connect to DB: " + e);
 		}
 	}
 	
@@ -33,6 +38,25 @@ public class DBManager {
 		executeUpdateSql(sql);
 	}
 	
+	public static ArrayList<OrderBookInfo> loadOrderBookUpdates(List<String> exchanges, java.util.Date start, java.util.Date end) {
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		
+		String sql = "SELECT currency_base, currency_counter, exchange, bid_px, ask_px, bid_qty, ask_qty, ts " +
+			"FROM quotes where ts > '" + format.format(start) + "' AND ts < '" + format.format(end) + "' " + 
+			"AND exchange in (" + toSqlList(exchanges) + ")";
+		ResultSet result = executeQuery(sql);
+		
+		ArrayList<OrderBookInfo> updates = new ArrayList<OrderBookInfo>();
+		try {
+			while (result.next()) {
+				updates.add(new OrderBookInfo(result));
+			}
+		} catch (Exception e) {
+			System.out.println("Error parsing order book info: " + e);
+		}
+		return updates;
+	}
+	
 	private static void executeUpdateSql(String sql) {
 		System.out.println("Executing SQL: " + sql);
 		try {
@@ -41,5 +65,23 @@ public class DBManager {
 		} catch (Exception e) {
 			System.out.println("SQL update failed: " + e);
 		}
+	}
+	
+	private static ResultSet executeQuery(String sql) {
+		System.out.println("Executing SQL: " + sql);
+		
+		ResultSet result = null;
+		try {
+			Statement stmt = m_connection.createStatement();  
+			result = stmt.executeQuery(sql);
+		} catch (Exception e) {
+			System.out.println("SQL query failed: " + e);
+		}
+		return result;
+	}
+	
+	private static String toSqlList(List<?> list) {
+		String sqlStr = String.join(",", list.stream().map((e) -> "'" + e.toString() + "'").collect(Collectors.toList()));
+		return sqlStr;
 	}
 }

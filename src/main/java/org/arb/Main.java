@@ -2,7 +2,12 @@ package org.arb;
 
 import org.arb.strategy.*;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 
 import org.knowm.xchange.anx.v2.ANXExchange;
@@ -28,11 +33,14 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 
 public class Main {
-	public static boolean isRecording = false;
-	public static boolean isReplay = false;
-	public static ArrayList<CurrencyPair> currencyPairs = new ArrayList<CurrencyPair>();
-	public static HashMap<String, String> exchangeNameTypeMap = new HashMap<String, String>();
-	public static Strategy strategy;
+	private static RunMode runMode = RunMode.Unknown;
+	private static ArrayList<CurrencyPair> currencyPairs = new ArrayList<CurrencyPair>();
+	private static HashMap<String, String> exchangeNameTypeMap = new HashMap<String, String>();
+	private static Strategy strategy;
+	private static Date start = Date.from(Instant.now());
+	private static int hours = 0;
+	private static Date end = Date.from(Instant.now().plusSeconds(12 * 60 * 60));
+	private static boolean pauseEnabled = true;
 	
 	private static HashMap<String, String> exchangeLookupMap;
 	
@@ -63,8 +71,12 @@ public class Main {
 		Logger root = (Logger)LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 		root.setLevel(Level.OFF);
 		
-		for (int i = 0; i < args.length; i+=2) {
-			processArg(args[i], args[i+1]);
+		try {
+			for (int i = 0; i < args.length; i+=2) {
+				processArg(args[i], args[i+1]);
+			}	
+		} catch (Exception e) {
+			exitWithError("Could not process argument: " + e);
 		}
 		
 		if (exchangeNameTypeMap.isEmpty()) {
@@ -72,24 +84,26 @@ public class Main {
 			exchangeNameTypeMap = exchangeLookupMap;
 		}
 		
-		Arb arb = new Arb(currencyPairs, exchangeNameTypeMap, strategy);
-		
-		if (isReplay) {
-			arb.startReplay("");
-		} else {
-			if (isRecording) {
-				arb.initRecording();
-			}
-			arb.startLive();
+		if (hours != 0) {
+			end = Date.from(start.toInstant().plusSeconds(hours * 60 * 60));
 		}
+		
+		Arb arb = new Arb(runMode, currencyPairs, exchangeNameTypeMap, strategy, start, end, pauseEnabled);
+		arb.start();
 	}
 	
-	public static void processArg(String key, String val) {
+	public static void processArg(String key, String val) throws Exception {
 		System.out.println("Processing arg: " + key + " " + val);
-		if (key.equals("--replay")) {
-			isReplay = true;
-		} else if (key.equals("--record")) {
-			isRecording = true;
+		if (key.equals("--mode")) {
+			if (val.equalsIgnoreCase(RunMode.Live.toString())) {
+				runMode = RunMode.Live;
+			} else if (val.equalsIgnoreCase(RunMode.Record.toString())) {
+				runMode = RunMode.Record;
+			} else if (val.equalsIgnoreCase(RunMode.Replay.toString())) {
+				runMode = RunMode.Replay;
+			} else {
+				runMode = RunMode.Unknown;
+			}
 		} else if (key.equals("--currencies")) {
 			String[] split = val.split(",");
 			for (String currencyPairRaw : split) {
@@ -107,6 +121,14 @@ public class Main {
 			}
 		} else if (key.equals("--strategy")) {
 			strategy = getStrategy(val);
+		} else if (key.equals("--start")) {
+			start = new SimpleDateFormat("yyyy-MM-dd").parse(val);
+		} else if (key.equals("--end")) {
+			end = new SimpleDateFormat("yyyy-MM-dd").parse(val);
+		} else if (key.equals("--hours")) {
+			hours = Integer.parseInt(val);
+		} else if (key.equals("--pause")) {
+			pauseEnabled = Boolean.parseBoolean(val);
 		} else {
 			exitWithError("unknown arg " + key);
 		}
