@@ -1,7 +1,8 @@
 package org.arb;
 
-import java.util.*;
+import java.util.ArrayList;
 
+import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.service.marketdata.MarketDataService;
@@ -20,7 +21,15 @@ public class MarketDataFeed {
 		m_feedName = name;
 		m_marketDataService = service;
 		m_calc = calc;
-		m_currencyPairs.addAll(currencyPairs);
+		
+		AccountInfo account = Arb.getAccountInfo(m_feedName);
+		for (CurrencyPair pair : currencyPairs) {
+			if (pair.counter.equals(Currency.USD) && account.usesTether()) {
+				m_currencyPairs.add(new CurrencyPair(Currency.BTC, Currency.USDT));
+			} else {
+				m_currencyPairs.add(pair);
+			}
+		}
 	}
 	
 	public void start() {

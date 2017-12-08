@@ -10,9 +10,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 
+import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.anx.v2.ANXExchange;
 import org.knowm.xchange.bitstamp.BitstampExchange;
 import org.knowm.xchange.bittrex.BittrexExchange;
+import org.knowm.xchange.cexio.CexIOExchange;
 import org.knowm.xchange.coinbase.CoinbaseExchange;
 import org.knowm.xchange.gdax.GDAXExchange;
 import org.knowm.xchange.gemini.v1.GeminiExchange;
@@ -23,6 +25,7 @@ import org.knowm.xchange.btcc.BTCCExchange;
 import org.knowm.xchange.btce.v3.BTCEExchange;
 import org.knowm.xchange.kraken.KrakenExchange;
 import org.knowm.xchange.okcoin.OkCoinExchange;
+import org.knowm.xchange.poloniex.PoloniexExchange;
 import org.knowm.xchange.quadrigacx.QuadrigaCxExchange;
 import org.knowm.xchange.taurus.TaurusExchange;
 import org.knowm.xchange.currency.Currency;
@@ -36,34 +39,41 @@ import ch.qos.logback.classic.Logger;
 public class Main {
 	private static RunMode runMode = RunMode.Unknown;
 	private static ArrayList<CurrencyPair> currencyPairs = new ArrayList<CurrencyPair>();
-	private static HashMap<String, String> exchangeNameTypeMap = new HashMap<String, String>();
+	private static HashMap<String, ExchangeSpecification> exchangeNameTypeMap = new HashMap<String, ExchangeSpecification>();
 	private static Strategy strategy;
 	private static Date start = Date.from(Instant.now());
 	private static int hours = 0;
 	private static Date end = Date.from(Instant.now().plusSeconds(12 * 60 * 60));
 	private static boolean pauseEnabled = true;
 	
-	private static HashMap<String, String> exchangeLookupMap;
+	private static HashMap<String, ExchangeSpecification> exchangeLookupMap;
 	
 	static {
-		exchangeLookupMap = new HashMap<String, String>();
-		exchangeLookupMap.put("anx", ANXExchange.class.getName());
-		exchangeLookupMap.put("bitbay", BitbayExchange.class.getName());
-		exchangeLookupMap.put("bitfinex", BitfinexExchange.class.getName());
-		exchangeLookupMap.put("bitstamp", BitstampExchange.class.getName());
-		exchangeLookupMap.put("btce", BTCEExchange.class.getName());
-		exchangeLookupMap.put("dsx", DSXExchange.class.getName());
-		exchangeLookupMap.put("gdax", GDAXExchange.class.getName());
-		exchangeLookupMap.put("gemini", GeminiExchange.class.getName());
-		exchangeLookupMap.put("kraken", KrakenExchange.class.getName());
-		exchangeLookupMap.put("taurus", TaurusExchange.class.getName());
-		exchangeLookupMap.put("quadrigacx", QuadrigaCxExchange.class.getName());
+		exchangeLookupMap = new HashMap<String, ExchangeSpecification>();
+		exchangeLookupMap.put("anx", new ExchangeSpecification(ANXExchange.class.getName()));
+		exchangeLookupMap.put("bitbay", new ExchangeSpecification(BitbayExchange.class.getName()));
+		exchangeLookupMap.put("bitstamp", new ExchangeSpecification(BitstampExchange.class.getName()));
+		exchangeLookupMap.put("cexio", new ExchangeSpecification(CexIOExchange.class.getName()));
+		exchangeLookupMap.put("dsx", new ExchangeSpecification(DSXExchange.class.getName()));
+		exchangeLookupMap.put("gdax", new ExchangeSpecification(GDAXExchange.class.getName()));
+		exchangeLookupMap.put("gemini", new ExchangeSpecification(GeminiExchange.class.getName()));
+		exchangeLookupMap.put("kraken", new ExchangeSpecification(KrakenExchange.class.getName()));
+		exchangeLookupMap.put("poloniex", new ExchangeSpecification(PoloniexExchange.class.getName()));
+		exchangeLookupMap.put("okcoin", new ExchangeSpecification(OkCoinExchange.class.getName()));
+		
+		//exchange specific params
+		exchangeLookupMap.get("okcoin").setExchangeSpecificParametersItem("Use_Intl", true);
 		
 		//disabled -- not working
 		//exchangeLookupMap.put("btcc", BTCCExchange.class.getName());
 		//exchangeLookupMap.put("coinbase", CoinbaseExchange.class.getName());
 		//exchangeLookupMap.put("itbit", ItBitExchange.class.getName());
-		//exchangeLookupMap.put("okcoin", OkCoinExchange.class.getName());
+		
+		//disabled -- not using
+		//exchangeLookupMap.put("taurus", new ExchangeSpecification(TaurusExchange.class.getName()));
+		//exchangeLookupMap.put("quadrigacx", new ExchangeSpecification(QuadrigaCxExchange.class.getName()));
+		//exchangeLookupMap.put("btce", new ExchangeSpecification(BTCEExchange.class.getName()));
+		//exchangeLookupMap.put("bitfinex", new ExchangeSpecification(BitfinexExchange.class.getName()));
 		
 		//disabled -- no BTC/USD
 		//exchangeLookupMap.put("bittrex", BittrexExchange.class.getName());
@@ -115,7 +125,7 @@ public class Main {
 		} else if (key.equals("--exchanges")) {
 			String[] split = val.split(",");
 			for (String exchange : split) {
-				String exchangeLookupResult = exchangeLookupMap.get(exchange);
+				ExchangeSpecification exchangeLookupResult = exchangeLookupMap.get(exchange);
 				if (exchangeLookupResult == null) {
 					exitWithError("unknown exchange " + exchange);
 				}

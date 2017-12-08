@@ -33,7 +33,7 @@ public class Arb {
 	public Arb(
 			RunMode runMode, 
 			ArrayList<CurrencyPair> currencyPairs, 
-			Map<String, String> exchangeNameTypeMap, 
+			Map<String, ExchangeSpecification> exchangeNameTypeMap, 
 			Strategy strategy, 
 			Date start, 
 			Date end,
@@ -153,14 +153,14 @@ public class Arb {
 		}
 	}
 	
-	public void addExchange(String name, String exchangeType) {
+	public void addExchange(String name, ExchangeSpecification spec) {
 		System.out.println("Adding exchange - " + name);
 		
 		Exchange exchange = null;
 		AccountService accountService = null;
 		MarketDataService marketDataService = null;
 		if (m_runMode != RunMode.Replay) {
-			exchange = ExchangeFactory.INSTANCE.createExchange(exchangeType);
+			exchange = ExchangeFactory.INSTANCE.createExchange(spec);
 			accountService = exchange.getAccountService();
 			marketDataService = exchange.getMarketDataService();
 			
@@ -174,8 +174,8 @@ public class Arb {
 		m_marketDataFeeds.add(marketDataFeed);
 	}
 	
-	public void addExchanges(Map<String, String> exchangeNameTypeMap) {
-		for (Entry<String, String> exchangeNameType : exchangeNameTypeMap.entrySet()) {
+	public void addExchanges(Map<String, ExchangeSpecification> exchangeSpecMap) {
+		for (Entry<String, ExchangeSpecification> exchangeNameType : exchangeSpecMap.entrySet()) {
 			addExchange(exchangeNameType.getKey(), exchangeNameType.getValue());
 		}
 	}

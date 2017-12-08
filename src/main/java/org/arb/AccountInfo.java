@@ -38,6 +38,14 @@ public class AccountInfo {
 		return true;
 	}
 	
+	public boolean usesTether() {
+		if (m_name.equals("poloniex")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
 	public Set<Currency> getCurrencies() {
 		return m_currencyMap.keySet();
 	}
